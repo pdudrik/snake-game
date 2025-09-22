@@ -7,20 +7,12 @@
 
 
 enum {
+	NONE,
 	RIGHT,
 	LEFT,
 	DOWN,
 	UP
 };
-
-
-// typedef struct {
-// 	int x;
-// 	int y;
-// 	int width;
-// 	int height;
-// 	int direction;
-// } head_struct;
 
 
 typedef struct Body {
@@ -45,10 +37,10 @@ typedef struct Food {
 bool initiliaze_window();
 int get_random_number(int min, int max, int step);
 void setup(body_s** snake, food_s* food);
-void read_input(SDL_Event event, body_s** snake);
+void read_input(SDL_Event event, body_s* snake);
 void move(body_s* snake, food_s* food);
-body_s* add_body_part(int new_x, int new_y);
-void generate_new_food(food_s* food);
+body_s* add_body_part(int new_x, int new_y, int direction, bool is_head);
+void generate_new_food(body_s* snake, food_s* food);
 void update();
 void render(body_s* snake, food_s food);
 void destroy_window();
@@ -57,9 +49,6 @@ void destroy_window();
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 bool game_alive = NULL;
-// int last_frame_time = 0;
-// body_s snake = {};
-// food_struct food = {};
 
 
 int main(int argc, char const *argv[]) {
@@ -75,33 +64,23 @@ int main(int argc, char const *argv[]) {
 	}
 
 	SDL_Event event;
-
 	setup(&snake, &food);
+	printf("snake: x=%d, y=%d\n", snake->x, snake->y);
+	if (!snake) {printf("Snake is NULL\n"); }
+
+	// Game loop
 	while (game_alive) {
 		while (SDL_PollEvent(&event) != 0) {
-			read_input(event, &snake);
+			read_input(event, snake);
 		}
-		// printf("snake->direction: %d\n", snake->direction);
+
 		move(snake, &food);
-		// if (snake->x == food.x &&
-		// 	snake->y == food.y) {
-		// 	printf("FOOD!\n");
+		if (!game_alive) {						// Hit boundary
+			break;
+		}
 
-		// 	body_s** snake_ptr = &snake;
-		// 	while((*snake_ptr)->next != NULL) {
-		// 		printf("node: x=%d, y=%d", (*snake_ptr)->x, (*snake_ptr)->y);
-		// 		(*snake_ptr) = (*snake_ptr)->next;
-		// 	}
-
-		// 	(*snake_ptr)->next = add_body_part((*snake_ptr)->x, (*snake_ptr)->y);
-		// 	generate_new_food(&food);
-		// }
-		// update();
-
-		// body_s* snake_ptr = &snake;
 		render(snake, food);
-		printf("\n");
-		SDL_Delay(500);
+		SDL_Delay(300);
 	}
 
 	destroy_window();
@@ -147,18 +126,14 @@ int get_random_number(int min, int max, int step) {
 
 
 void setup(body_s** snake, food_s* food) {
-	(*snake)->x = get_random_number(BORDER_THICKNESS,
-							   	 WINDOW_WIDTH-BORDER_THICKNESS*2,
-							   	 SNAKE_HEAD_SIZE);
-	(*snake)->y = get_random_number(BORDER_THICKNESS,
-							   	 WINDOW_HEIGHT-BORDER_THICKNESS*2,
-							   	 SNAKE_HEAD_SIZE);
-	(*snake)->width = SNAKE_HEAD_SIZE;
-	(*snake)->height = SNAKE_HEAD_SIZE;
-	(*snake)->direction = get_random_number(0, 3, 1);
-	(*snake)->is_head = true;
-	(*snake)->next = NULL;
-	// printf("HEAD DIRECTION: %d\n", (*snake)->direction);
+	int x = get_random_number(BORDER_THICKNESS,
+  						   	  WINDOW_WIDTH - (BORDER_THICKNESS * 2),
+							  SNAKE_HEAD_SIZE);
+	int y = get_random_number(BORDER_THICKNESS,
+							  WINDOW_HEIGHT - (BORDER_THICKNESS * 2),
+							  SNAKE_HEAD_SIZE);
+	int direction = get_random_number(1, 4, 1);
+	(*snake) = add_body_part(x, y, direction, true);
 
 	food->x = get_random_number(BORDER_THICKNESS + SNAKE_HEAD_SIZE,
 							   WINDOW_WIDTH-BORDER_THICKNESS*2,
@@ -171,7 +146,7 @@ void setup(body_s** snake, food_s* food) {
 }
 
 
-void read_input(SDL_Event event, body_s** snake) {
+void read_input(SDL_Event event, body_s* snake) {
 	switch (event.type) {
 		case SDL_QUIT:
 			game_alive = false;
@@ -185,23 +160,35 @@ void read_input(SDL_Event event, body_s** snake) {
 					break;
 
 				case SDLK_a:
-					(*snake)->direction = LEFT;
 					printf("Pressed A\n");
+					if (snake->direction == UP ||
+						snake->direction == DOWN) {
+						snake->direction = LEFT;
+					}
 					break;
 
 				case SDLK_w:
-					(*snake)->direction = UP;
 					printf("Pressed W\n");
+					if (snake->direction == LEFT ||
+						snake->direction == RIGHT) {
+						snake->direction = UP;
+					}
 					break;
 
 				case SDLK_d:
-					(*snake)->direction = RIGHT;
 					printf("Pressed D\n");
+					if (snake->direction == UP ||
+						snake->direction == DOWN) {
+						snake->direction = RIGHT;
+					}
 					break;
 
 				case SDLK_s:
-					(*snake)->direction = DOWN;
 					printf("Pressed S\n");
+					if (snake->direction == LEFT ||
+						snake->direction == RIGHT) {
+						snake->direction = DOWN;
+					}
 					break;
 			}
 			break;
@@ -231,7 +218,7 @@ void move(body_s* snake, food_s* food) {
 			snake->y += SNAKE_STEP;
 			break;
 	}
-	
+
 	// Shift tail
 	body_s* ptr = snake->next;
 	while (ptr) {
@@ -247,11 +234,11 @@ void move(body_s* snake, food_s* food) {
 		ptr = ptr->next;
 	}
 
-	// Check for borders
+	// Check for boundary
 	if (snake->x == 0 ||
-		snake->x == WINDOW_WIDTH-BORDER_THICKNESS ||
+		snake->x == WINDOW_WIDTH - BORDER_THICKNESS||
 		snake->y == 0 ||
-		snake->y == WINDOW_HEIGHT-BORDER_THICKNESS*2) {
+		snake->y == WINDOW_HEIGHT - BORDER_THICKNESS) {
 		game_alive = false;
 		printf("you lost");
 	}
@@ -263,8 +250,8 @@ void move(body_s* snake, food_s* food) {
 			tail = tail->next;
 		}
 
-		tail->next = add_body_part(prev_x, prev_y);
-		generate_new_food(food);
+		tail->next = add_body_part(prev_x, prev_y, NONE, false);
+		generate_new_food(snake, food);
 	}
 }
 
@@ -319,7 +306,7 @@ void destroy_window() {
 }
 
 
-body_s* add_body_part(int new_x, int new_y) {
+body_s* add_body_part(int new_x, int new_y, int direction, bool is_head) {
 	body_s* new_body_part = NULL;
 	new_body_part = (body_s*) malloc(sizeof(body_s));
 
@@ -327,21 +314,42 @@ body_s* add_body_part(int new_x, int new_y) {
 	new_body_part->y = new_y;
 	new_body_part->width = SNAKE_HEAD_SIZE;
 	new_body_part->height = SNAKE_HEAD_SIZE;
-	new_body_part->is_head = false;
-	new_body_part->direction = 9;
+	new_body_part->is_head = is_head;
+	if (is_head) {
+		new_body_part->direction = direction;
+	}
+	else {
+		new_body_part->direction = NONE;
+	}
 	new_body_part->next = NULL;
 
 	return new_body_part;
 }
 
 
-void generate_new_food(food_s* food) {
-	food->x = get_random_number(BORDER_THICKNESS + SNAKE_HEAD_SIZE,
-							   WINDOW_WIDTH-BORDER_THICKNESS*2,
-							   SNAKE_HEAD_SIZE);
-	food->y = get_random_number(BORDER_THICKNESS + SNAKE_HEAD_SIZE,
-							   WINDOW_HEIGHT-BORDER_THICKNESS*2,
-							   SNAKE_HEAD_SIZE);
+void generate_new_food(body_s* snake, food_s* food) {
+	bool obstacle = true;
 
-	// food->size = SNAKE_HEAD_SIZE / 2;
+	while (obstacle) {
+		food->x = get_random_number(BORDER_THICKNESS + SNAKE_HEAD_SIZE,
+								   WINDOW_WIDTH-BORDER_THICKNESS*2,
+								   SNAKE_HEAD_SIZE);
+		food->y = get_random_number(BORDER_THICKNESS + SNAKE_HEAD_SIZE,
+								   WINDOW_HEIGHT-BORDER_THICKNESS*2,
+								   SNAKE_HEAD_SIZE);
+
+		// Do not generate in snake body
+		body_s* ptr = snake->next;
+		while (ptr) {
+			if (ptr->x == food->x && ptr->y == food->y) {
+				obstacle = true;
+				break;
+			}
+			else {
+				obstacle = false;
+			}
+
+			ptr = ptr->next;
+		}
+	}
 }

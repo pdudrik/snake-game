@@ -53,3 +53,4 @@ make
 ## Agenda
 1. Apply delta time for movement (FPS logic)
 2. Improve readings for changing direction, improve movement. It is not smooth.
+3. Update movement and forbid 180 direction switch. One key is forbidden but when (direction LEFT) you press W and D it may switch your direction by 180 degrees when DSL_Delay is too high e.g. 500 ms. Allow only I direction switch per cell in "grid".

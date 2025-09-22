@@ -1,8 +1,6 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define WINDOW_TITLE "Snake Game"
-// #define FPS 30
-// #define FRAME_TARGET_TIME (1000 / FPS)
 
 #define SNAKE_HEAD_SIZE 40
 #define SNAKE_STEP SNAKE_HEAD_SIZE
