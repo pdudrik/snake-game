@@ -80,7 +80,7 @@ int main(int argc, char const *argv[]) {
 		}
 
 		render(snake, food);
-		SDL_Delay(300);
+		SDL_Delay(150);
 	}
 
 	destroy_window();
@@ -199,28 +199,76 @@ void read_input(SDL_Event event, body_s* snake) {
 void move(body_s* snake, food_s* food) {
 	int prev_x = snake->x;
 	int prev_y = snake->y;
+	body_s* ptr = snake->next;
 
 	// Shift head
 	switch (snake->direction) {
 		case RIGHT:
+			while (ptr) {
+				if ((snake->x + SNAKE_STEP) == ptr->x &&
+					snake->y == ptr->y) {
+					game_alive = false;
+					printf("You hit your tail! GAME OVER\n");
+					break;
+				}
+				ptr = ptr->next;
+			}
 			snake->x += SNAKE_STEP;
 			break;
 
 		case LEFT:
+			while (ptr) {
+				if ((snake->x - SNAKE_STEP) == ptr->x &&
+					snake->y == ptr->y) {
+					game_alive = false;
+					printf("You hit your tail! GAME OVER\n");
+					break;
+				}
+				ptr = ptr->next;
+			}
 			snake->x -= SNAKE_STEP;
 			break;
 
 		case UP:
+			while (ptr) {
+				if ((snake->y - SNAKE_STEP) == ptr->y &&
+					snake->x == ptr->x) {
+					game_alive = false;
+					printf("You hit your tail! GAME OVER\n");
+					break;
+				}
+				ptr = ptr->next;
+			}
 			snake->y -= SNAKE_STEP;
 			break;
 
 		case DOWN:
+			while (ptr) {
+				if ((snake->y + SNAKE_STEP) == ptr->y &&
+					snake->x == ptr->x) {
+					game_alive = false;
+					printf("You hit your tail! GAME OVER\n");
+					break;
+				}
+				ptr = ptr->next;
+			}
 			snake->y += SNAKE_STEP;
 			break;
 	}
 
-	// Shift tail
-	body_s* ptr = snake->next;
+	// Check for self bite
+	// while (ptr) {
+	// 	if ((snake->y + SNAKE_STEP) == ptr->y &&
+	// 		snake->x == ptr->x) {
+	// 		game_alive = false;
+	// 		printf("You hit your tail! GAME OVER\n");
+	// 		break;
+	// 	}
+	// 	ptr = ptr->next;
+	// }
+
+
+	ptr = snake->next;
 	while (ptr) {
 		int temp_x = ptr->x;
 		int temp_y = ptr->y;
@@ -240,8 +288,10 @@ void move(body_s* snake, food_s* food) {
 		snake->y == 0 ||
 		snake->y == WINDOW_HEIGHT - BORDER_THICKNESS) {
 		game_alive = false;
-		printf("you lost");
+		printf("You hit your wall! GAME OVER\n");
 	}
+
+
 
 	// Add new part of tail if eats food
 	if (snake->x == food->x && snake->y == food->y) {
