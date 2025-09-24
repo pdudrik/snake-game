@@ -1,6 +1,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define WINDOW_TITLE "Snake Game"
+#define FONT_PATH "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 
 #define SNAKE_HEAD_SIZE 40
 #define SNAKE_STEP SNAKE_HEAD_SIZE

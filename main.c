@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include "./constants.h"
 
 
@@ -62,8 +63,8 @@ int main(int argc, char const *argv[]) {
 	if (!game_alive) {
 		return 0;
 	}
-
-	SDL_Event event;
+	
+	SDL_Event event;			
 	setup(&snake, &food);
 	printf("snake: x=%d, y=%d\n", snake->x, snake->y);
 	if (!snake) {printf("Snake is NULL\n"); }
@@ -80,7 +81,7 @@ int main(int argc, char const *argv[]) {
 		}
 
 		render(snake, food);
-		SDL_Delay(150);
+		SDL_Delay(300);
 	}
 
 	destroy_window();
@@ -104,6 +105,11 @@ bool initiliaze_window() {
 
 	if (!window) {
 		fprintf(stderr, "Error creating SDL Window: %s\n", SDL_GetError());
+		return false;
+	}
+
+	if (TTF_Init() < 0) {
+		fprintf(stderr, "Error SDL_ttf initializing: %s\n", TTF_GetError());
 		return false;
 	}
 	
@@ -320,6 +326,27 @@ void render(body_s* snake, food_s food) {
 							  WINDOW_HEIGHT-BORDER_THICKNESS*2};
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(renderer, &playing_board);
+
+	TTF_Font* font = TTF_OpenFont(FONT_PATH, 24);
+	if(!font) {
+		fprintf(stderr, "Error loading font: %s\n", TTF_GetError());
+	}
+	SDL_Color text_color = {255, 255, 255, 255};
+	SDL_Surface* text_surface = TTF_RenderText_Solid(font, "Hello World!", text_color);
+	if (!text_surface) {
+	    printf("Failed to create text surface: %s\n", TTF_GetError());
+	    return;
+	}
+
+	SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+	if (!text_texture){
+	    printf("Failed to create text texture: %s\n", SDL_GetError());
+	    return;
+	}
+
+	SDL_Rect text_rect = {5, 5, text_surface->w, text_surface->h};
+	SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
+
 
 	SDL_Rect food_rect = {food.x + (SNAKE_HEAD_SIZE / 4),
 						  food.y + (SNAKE_HEAD_SIZE / 4),
